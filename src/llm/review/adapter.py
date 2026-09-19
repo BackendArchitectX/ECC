@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from typing import Any
 
@@ -23,6 +24,14 @@ VALID_EVIDENCE_KINDS = {"plan", "diff", "test", "failure", "context"}
 MAX_EVIDENCE_ITEMS = 8
 MAX_EVIDENCE_ITEM_CHARS = 50_000
 MAX_EVIDENCE_TOTAL_CHARS = 120_000
+MAX_OBJECTIVE_CHARS = 2_000
+MAX_SOURCE_CHARS = 1_000
+MAX_SUMMARY_CHARS = 4_000
+MAX_FINDING_ID_CHARS = 64
+MAX_CLAIM_CHARS = 8_000
+MAX_VERIFICATION_CHARS = 4_000
+MAX_LOCATION_CHARS = 1_000
+EVIDENCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 VALID_CATEGORIES = {
     "correctness",
@@ -92,7 +101,11 @@ def validate_request(request: Any) -> dict[str, Any]:
         raise ValueError(f"request.schema must be {REQUEST_SCHEMA}")
     if request.get("mode") not in VALID_MODES:
         raise ValueError("request.mode is invalid")
-    _require_non_empty_string(request.get("objective"), "request.objective")
+    objective = _require_non_empty_string(
+        request.get("objective"), "request.objective"
+    )
+    if len(objective) > MAX_OBJECTIVE_CHARS:
+        raise ValueError("request.objective exceeds character limit")
 
     evidence = request.get("evidence")
     if not isinstance(evidence, list) or not evidence:
@@ -112,6 +125,11 @@ def validate_request(request: Any) -> dict[str, Any]:
         evidence_id = _require_non_empty_string(
             item.get("id"), f"request.evidence[{index}].id"
         )
+        if not EVIDENCE_ID_PATTERN.fullmatch(evidence_id):
+            raise ValueError(
+                f"request.evidence[{index}].id must be a stable identifier "
+                "up to 64 characters"
+            )
         if evidence_id in evidence_ids:
             raise ValueError(f"duplicate evidence id: {evidence_id}")
         evidence_ids.add(evidence_id)
@@ -120,9 +138,11 @@ def validate_request(request: Any) -> dict[str, Any]:
         )
         if kind not in VALID_EVIDENCE_KINDS:
             raise ValueError(f"request.evidence[{index}].kind is invalid")
-        _require_non_empty_string(
+        source = _require_non_empty_string(
             item.get("source"), f"request.evidence[{index}].source"
         )
+        if len(source) > MAX_SOURCE_CHARS:
+            raise ValueError(f"request.evidence[{index}].source exceeds limit")
         content = _require_non_empty_string(
             item.get("content"), f"request.evidence[{index}].content"
         )
@@ -132,6 +152,12 @@ def validate_request(request: Any) -> dict[str, Any]:
 
     if total_chars > MAX_EVIDENCE_TOTAL_CHARS:
         raise ValueError("request.evidence exceeds total character limit")
+
+    encoded = json.dumps(
+        request, ensure_ascii=False, separators=(",", ":")
+    ).encode("utf-8")
+    if len(encoded) + 1 > MAX_STDIN_BYTES:
+        raise ValueError("review request exceeds adapter stdin limit")
 
     constraints = request.get("constraints")
     if not isinstance(constraints, dict):
@@ -170,7 +196,9 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"result.schema must be {RESULT_SCHEMA}")
     if result.get("status") not in {"clean", "findings"}:
         raise ValueError("result.status must be clean or findings")
-    _require_non_empty_string(result.get("summary"), "result.summary")
+    summary = _require_non_empty_string(result.get("summary"), "result.summary")
+    if len(summary) > MAX_SUMMARY_CHARS:
+        raise ValueError("result.summary exceeds limit")
 
     findings = result.get("findings")
     if not isinstance(findings, list):
@@ -202,6 +230,8 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
         finding_id = _require_non_empty_string(
             finding.get("id"), f"result.findings[{index}].id"
         )
+        if len(finding_id) > MAX_FINDING_ID_CHARS:
+            raise ValueError(f"result.findings[{index}].id exceeds limit")
         if finding_id in finding_ids:
             raise ValueError(f"duplicate finding id: {finding_id}")
         finding_ids.add(finding_id)
@@ -210,12 +240,18 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
             raise ValueError(f"result.findings[{index}].severity is invalid")
         if finding.get("category") not in VALID_CATEGORIES:
             raise ValueError(f"result.findings[{index}].category is invalid")
-        _require_non_empty_string(
+        claim = _require_non_empty_string(
             finding.get("claim"), f"result.findings[{index}].claim"
         )
-        _require_non_empty_string(
+        if len(claim) > MAX_CLAIM_CHARS:
+            raise ValueError(f"result.findings[{index}].claim exceeds limit")
+        verification = _require_non_empty_string(
             finding.get("verification"), f"result.findings[{index}].verification"
         )
+        if len(verification) > MAX_VERIFICATION_CHARS:
+            raise ValueError(
+                f"result.findings[{index}].verification exceeds limit"
+            )
 
         refs = finding.get("evidenceRefs")
         if not isinstance(refs, list) or not refs:
@@ -238,10 +274,15 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
                     f"finding references evidence that was not supplied: {evidence_id}"
                 )
             if "location" in ref:
-                _require_non_empty_string(
+                location = _require_non_empty_string(
                     ref["location"],
                     f"result.findings[{index}].evidenceRefs[{ref_index}].location",
                 )
+                if len(location) > MAX_LOCATION_CHARS:
+                    raise ValueError(
+                        f"result.findings[{index}].evidenceRefs[{ref_index}]"
+                        ".location exceeds limit"
+                    )
 
     return result
 
