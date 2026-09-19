@@ -19,6 +19,10 @@ REQUEST_SCHEMA = "ecc.review.request.v1"
 RESULT_SCHEMA = "ecc.review.result.v1"
 MAX_STDIN_BYTES = 256 * 1024
 VALID_MODES = {"plan", "diff", "failure", "final"}
+VALID_EVIDENCE_KINDS = {"plan", "diff", "test", "failure", "context"}
+MAX_EVIDENCE_ITEMS = 8
+MAX_EVIDENCE_ITEM_CHARS = 50_000
+MAX_EVIDENCE_TOTAL_CHARS = 120_000
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 VALID_CATEGORIES = {
     "correctness",
@@ -74,6 +78,16 @@ def _require_non_empty_string(value: Any, label: str) -> str:
 def validate_request(request: Any) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise ValueError("review request must be an object")
+    expected_root = {
+        "schema",
+        "mode",
+        "objective",
+        "evidence",
+        "constraints",
+        "trust",
+    }
+    if set(request) != expected_root:
+        raise ValueError("review request contains missing or unsupported root fields")
     if request.get("schema") != REQUEST_SCHEMA:
         raise ValueError(f"request.schema must be {REQUEST_SCHEMA}")
     if request.get("mode") not in VALID_MODES:
@@ -83,28 +97,47 @@ def validate_request(request: Any) -> dict[str, Any]:
     evidence = request.get("evidence")
     if not isinstance(evidence, list) or not evidence:
         raise ValueError("request.evidence must contain at least one item")
+    if len(evidence) > MAX_EVIDENCE_ITEMS:
+        raise ValueError("request.evidence exceeds the item limit")
 
     evidence_ids: set[str] = set()
+    total_chars = 0
     for index, item in enumerate(evidence):
         if not isinstance(item, dict):
             raise ValueError(f"request.evidence[{index}] must be an object")
+        if set(item) != {"id", "kind", "source", "content"}:
+            raise ValueError(
+                f"request.evidence[{index}] contains missing or unsupported fields"
+            )
         evidence_id = _require_non_empty_string(
             item.get("id"), f"request.evidence[{index}].id"
         )
         if evidence_id in evidence_ids:
             raise ValueError(f"duplicate evidence id: {evidence_id}")
         evidence_ids.add(evidence_id)
-        _require_non_empty_string(item.get("kind"), f"request.evidence[{index}].kind")
+        kind = _require_non_empty_string(
+            item.get("kind"), f"request.evidence[{index}].kind"
+        )
+        if kind not in VALID_EVIDENCE_KINDS:
+            raise ValueError(f"request.evidence[{index}].kind is invalid")
         _require_non_empty_string(
             item.get("source"), f"request.evidence[{index}].source"
         )
-        _require_non_empty_string(
+        content = _require_non_empty_string(
             item.get("content"), f"request.evidence[{index}].content"
         )
+        if len(content) > MAX_EVIDENCE_ITEM_CHARS:
+            raise ValueError(f"request.evidence[{index}].content exceeds item limit")
+        total_chars += len(content)
+
+    if total_chars > MAX_EVIDENCE_TOTAL_CHARS:
+        raise ValueError("request.evidence exceeds total character limit")
 
     constraints = request.get("constraints")
     if not isinstance(constraints, dict):
         raise ValueError("request.constraints must be an object")
+    if set(constraints) != {"maxFindings"}:
+        raise ValueError("request.constraints contains unsupported fields")
     max_findings = constraints.get("maxFindings")
     if not isinstance(max_findings, int) or isinstance(max_findings, bool):
         raise ValueError("request.constraints.maxFindings must be an integer")
@@ -114,6 +147,8 @@ def validate_request(request: Any) -> dict[str, Any]:
     trust = request.get("trust")
     if not isinstance(trust, dict):
         raise ValueError("request.trust must be an object")
+    if set(trust) != {"reviewerAuthority", "repositoryWrite", "shellAuthority"}:
+        raise ValueError("request.trust contains missing or unsupported fields")
     if (
         trust.get("reviewerAuthority") != "advisory"
         or trust.get("repositoryWrite") is not False
