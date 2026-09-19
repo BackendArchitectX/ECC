@@ -16,6 +16,7 @@ const {
   scanEvidence,
   sensitiveDiffPathReason,
   sensitivePathReason,
+  validateConfig,
   validateResult,
   writeConfig,
 } = require('../../scripts/lib/cross-review');
@@ -106,14 +107,27 @@ function main() {
       assert.strictEqual(sensitivePathReason('config/prod.pem'), 'private-key-file');
       assert.strictEqual(sensitivePathReason('src/app.js'), null);
     }],
-    ['recognizes sensitive paths in unified diff headers', () => {
-      const diff = [
+    ['recognizes sensitive paths across text, rename, and binary diff headers', () => {
+      const dotenvDiff = [
         'diff --git a/.env b/.env',
         '--- a/.env',
         '+++ b/.env',
         '+SAFE_LOOKING=value',
       ].join('\n');
-      assert.strictEqual(sensitiveDiffPathReason(diff), 'dotenv-file');
+      const renamedSecret = [
+        'diff --git a/config.txt b/.env.production',
+        'similarity index 100%',
+        'rename from config.txt',
+        'rename to .env.production',
+      ].join('\n');
+      const binaryKey = [
+        'diff --git a/cert.p12 b/cert.p12',
+        'Binary files a/cert.p12 and b/cert.p12 differ',
+      ].join('\n');
+
+      assert.strictEqual(sensitiveDiffPathReason(dotenvDiff), 'dotenv-file');
+      assert.strictEqual(sensitiveDiffPathReason(renamedSecret), 'dotenv-file');
+      assert.strictEqual(sensitiveDiffPathReason(binaryKey), 'private-key-file');
     }],
     ['detects high-confidence credential text without returning the secret', () => {
       const secret = 'ghp_' + 'A'.repeat(36);
@@ -152,6 +166,18 @@ function main() {
       result.command = 'rm -rf';
       assert.throws(() => validateResult(result, validRequest()), /unsupported field/);
     }],
+    ['rejects unsupported reviewer config fields', () => {
+      assert.throws(
+        () => validateConfig({
+          command: 'reviewer',
+          args: [],
+          passEnv: [],
+          timeoutMs: 120000,
+          cwd: '/repo',
+        }),
+        /unsupported field/
+      );
+    }],
     ['keeps reviewer child environment minimal and explicit', () => {
       const child = buildReviewerEnv(
         {
@@ -170,6 +196,7 @@ function main() {
         'linux'
       );
       assert.strictEqual(child.OPENAI_API_KEY, 'allowed');
+      assert.strictEqual(child.HOME, undefined);
       assert.strictEqual(child.AWS_SECRET_ACCESS_KEY, undefined);
       assert.strictEqual(child.RANDOM_PRIVATE_VALUE, undefined);
       assert.strictEqual(child.ECC_CROSS_REVIEW_PROTOCOL, 'ecc.review.v1');
