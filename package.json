@@ -105,6 +105,7 @@
     "scripts/ci/scan-supply-chain-iocs.js",
     "scripts/ci/supply-chain-advisory-sources.js",
     "scripts/consult.js",
+    "scripts/cross-review.js",
     "scripts/auto-update.js",
     "scripts/claw.js",
     "scripts/control-pane.js",
