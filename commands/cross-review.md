@@ -38,9 +38,30 @@ Accept exactly one mode:
 
 If no mode is supplied, ask the user to choose one. Do not guess.
 
-## Phase 2 — Build the Bounded Packet
+## Phase 2 — Resolve the Runtime and Build the Bounded Packet
 
-Use the ECC CLI. Examples:
+When running as an installed Claude plugin, prefer the copy bundled with the
+active plugin:
+
+~~~bash
+node "$CLAUDE_PLUGIN_ROOT/scripts/cross-review.js" <mode> ...
+~~~
+
+When working directly from an ECC repository checkout, use:
+
+~~~bash
+node scripts/cross-review.js <mode> ...
+~~~
+
+The packaged external-terminal equivalent is:
+
+~~~bash
+ecc cross-review <mode> ...
+~~~
+
+Do not silently install a package just to run this command.
+
+Examples below use the packaged CLI spelling for readability:
 
 ~~~bash
 # Review the tracked diff. Untracked files are intentionally not included.
