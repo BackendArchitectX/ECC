@@ -52,6 +52,13 @@ function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+function assertNoExtraKeys(value, allowedKeys, label) {
+  const extras = Object.keys(value).filter(key => !allowedKeys.has(key));
+  if (extras.length > 0) {
+    throw new Error(`${label} contains unsupported field(s): ${extras.join(', ')}`);
+  }
+}
+
 function requireString(value, label, { allowEmpty = false } = {}) {
   if (typeof value !== 'string' || (!allowEmpty && value.trim() === '')) {
     throw new Error(`${label} must be ${allowEmpty ? 'a string' : 'a non-empty string'}`);
@@ -131,6 +138,11 @@ function validateEvidence(evidence) {
     if (!isPlainObject(item)) {
       throw new Error(`request.evidence[${index}] must be an object`);
     }
+    assertNoExtraKeys(
+      item,
+      new Set(['id', 'kind', 'source', 'content']),
+      `request.evidence[${index}]`
+    );
     requireString(item.id, `request.evidence[${index}].id`);
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(item.id)) {
       throw new Error(`request.evidence[${index}].id must be a stable identifier up to 64 characters`);
@@ -164,6 +176,11 @@ function validateEvidence(evidence) {
 
 function validateRequest(request) {
   if (!isPlainObject(request)) throw new Error('review request must be an object');
+  assertNoExtraKeys(
+    request,
+    new Set(['schema', 'mode', 'objective', 'evidence', 'constraints', 'trust']),
+    'request'
+  );
   if (request.schema !== REQUEST_SCHEMA) {
     throw new Error(`request.schema must be ${REQUEST_SCHEMA}`);
   }
@@ -177,12 +194,18 @@ function validateRequest(request) {
   if (!isPlainObject(request.constraints)) {
     throw new Error('request.constraints must be an object');
   }
+  assertNoExtraKeys(request.constraints, new Set(['maxFindings']), 'request.constraints');
   const maxFindings = request.constraints.maxFindings;
   if (!Number.isInteger(maxFindings) || maxFindings < 1 || maxFindings > MAX_FINDINGS) {
     throw new Error(`request.constraints.maxFindings must be an integer from 1 to ${MAX_FINDINGS}`);
   }
 
   if (!isPlainObject(request.trust)) throw new Error('request.trust must be an object');
+  assertNoExtraKeys(
+    request.trust,
+    new Set(['reviewerAuthority', 'repositoryWrite', 'shellAuthority']),
+    'request.trust'
+  );
   if (
     request.trust.reviewerAuthority !== 'advisory'
     || request.trust.repositoryWrite !== false
@@ -227,6 +250,11 @@ function validateEvidenceRefs(finding, evidenceIds, index) {
     if (!isPlainObject(ref)) {
       throw new Error(`result.findings[${index}].evidenceRefs[${refIndex}] must be an object`);
     }
+    assertNoExtraKeys(
+      ref,
+      new Set(['evidenceId', 'location']),
+      `result.findings[${index}].evidenceRefs[${refIndex}]`
+    );
     requireString(ref.evidenceId, `result.findings[${index}].evidenceRefs[${refIndex}].evidenceId`);
     if (!evidenceIds.has(ref.evidenceId)) {
       throw new Error(
@@ -242,6 +270,7 @@ function validateEvidenceRefs(finding, evidenceIds, index) {
 function validateResult(result, request) {
   const { ids: evidenceIds } = validateRequest(request);
   if (!isPlainObject(result)) throw new Error('review result must be an object');
+  assertNoExtraKeys(result, new Set(['schema', 'status', 'summary', 'findings']), 'result');
   if (result.schema !== RESULT_SCHEMA) {
     throw new Error(`result.schema must be ${RESULT_SCHEMA}`);
   }
@@ -264,6 +293,11 @@ function validateResult(result, request) {
   const findingIds = new Set();
   for (const [index, finding] of result.findings.entries()) {
     if (!isPlainObject(finding)) throw new Error(`result.findings[${index}] must be an object`);
+    assertNoExtraKeys(
+      finding,
+      new Set(['id', 'severity', 'category', 'claim', 'evidenceRefs', 'verification']),
+      `result.findings[${index}]`
+    );
     requireString(finding.id, `result.findings[${index}].id`);
     if (findingIds.has(finding.id)) throw new Error(`duplicate finding id: ${finding.id}`);
     findingIds.add(finding.id);
@@ -478,6 +512,7 @@ module.exports = {
   RESULT_SCHEMA,
   REVIEW_MODES,
   SEVERITIES,
+  assertNoExtraKeys,
   buildPreview,
   buildReviewerEnv,
   createRequest,
