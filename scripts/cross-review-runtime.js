@@ -39,8 +39,8 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_BUFFER_BYTES = 4 * 1024 * 1024;
 
 const SENSITIVE_PATH_RULES = Object.freeze([
-  ['dotenv-file', /(^|\/)\.env(?:$|[.\/\s"])/i],
-  ['credential-file', /(^|\/)(?:credentials?|secrets?)(?:$|[._\/\-\s"])/i],
+  ['dotenv-file', /(^|\/)\.env(?:$|[./\s"])/i],
+  ['credential-file', /(^|\/)(?:credentials?|secrets?)(?:$|[._/\s"-])/i],
   ['private-key-file', /\.(?:pem|key|p12|pfx)(?:$|[\s"])/i],
   ['ssh-private-key', /(^|\/)id_(?:rsa|dsa|ecdsa|ed25519)(?:$|[\s"])/i],
   ['aws-credentials-file', /(^|\/)\.aws\/credentials(?:$|[\s"])/i],
@@ -58,6 +58,10 @@ const SECRET_PATTERNS = Object.freeze([
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function characterLength(value) {
+  return Array.from(String(value)).length;
 }
 
 function assertNoExtraKeys(value, allowedKeys, label) {
@@ -119,6 +123,18 @@ function scanSecretText(content) {
 function scanEvidence(evidence) {
   const blocked = [];
   for (const item of evidence) {
+    const idSecretReason = scanSecretText(item.id);
+    if (idSecretReason) {
+      blocked.push({ evidenceId: item.id, source: 'evidence.id', reason: idSecretReason });
+      continue;
+    }
+
+    const sourceSecretReason = scanSecretText(item.source);
+    if (sourceSecretReason) {
+      blocked.push({ evidenceId: item.id, source: 'evidence.source', reason: sourceSecretReason });
+      continue;
+    }
+
     const pathReason = sensitivePathReason(item.source);
     if (pathReason) {
       blocked.push({ evidenceId: item.id, source: item.source, reason: pathReason });
@@ -135,6 +151,19 @@ function scanEvidence(evidence) {
     if (secretReason) {
       blocked.push({ evidenceId: item.id, source: item.source, reason: secretReason });
     }
+  }
+  return blocked;
+}
+
+function scanRequest(request) {
+  const blocked = scanEvidence(request.evidence);
+  const objectiveReason = scanSecretText(request.objective);
+  if (objectiveReason) {
+    blocked.unshift({
+      evidenceId: 'objective',
+      source: 'request.objective',
+      reason: objectiveReason,
+    });
   }
   return blocked;
 }
@@ -171,17 +200,17 @@ function validateEvidence(evidence) {
       throw new Error(`request.evidence[${index}].kind must be one of: ${[...EVIDENCE_KINDS].join(', ')}`);
     }
     requireString(item.source, `request.evidence[${index}].source`);
-    if (item.source.length > MAX_SOURCE_CHARS) {
+    if (characterLength(item.source) > MAX_SOURCE_CHARS) {
       throw new Error(`request.evidence[${index}].source exceeds the ${MAX_SOURCE_CHARS}-character limit`);
     }
     requireString(item.content, `request.evidence[${index}].content`);
 
-    if (item.content.length > MAX_EVIDENCE_ITEM_CHARS) {
+    if (characterLength(item.content) > MAX_EVIDENCE_ITEM_CHARS) {
       throw new Error(
         `request.evidence[${index}].content exceeds the ${MAX_EVIDENCE_ITEM_CHARS}-character item limit`
       );
     }
-    totalChars += item.content.length;
+    totalChars += characterLength(item.content);
   }
 
   if (totalChars > MAX_EVIDENCE_TOTAL_CHARS) {
@@ -206,7 +235,7 @@ function validateRequest(request) {
     throw new Error(`request.mode must be one of: ${[...REVIEW_MODES].join(', ')}`);
   }
   requireString(request.objective, 'request.objective');
-  if (request.objective.length > MAX_OBJECTIVE_CHARS) {
+  if (characterLength(request.objective) > MAX_OBJECTIVE_CHARS) {
     throw new Error(`request.objective exceeds the ${MAX_OBJECTIVE_CHARS}-character limit`);
   }
 
@@ -289,7 +318,7 @@ function validateEvidenceRefs(finding, evidenceIds, index) {
     }
     if (ref.location !== undefined) {
       requireString(ref.location, `result.findings[${index}].evidenceRefs[${refIndex}].location`);
-      if (ref.location.length > MAX_LOCATION_CHARS) {
+      if (characterLength(ref.location) > MAX_LOCATION_CHARS) {
         throw new Error(`result.findings[${index}].evidenceRefs[${refIndex}].location exceeds limit`);
       }
     }
@@ -307,7 +336,7 @@ function validateResult(result, request) {
     throw new Error('result.status must be clean or findings');
   }
   requireString(result.summary, 'result.summary');
-  if (result.summary.length > MAX_SUMMARY_CHARS) {
+  if (characterLength(result.summary) > MAX_SUMMARY_CHARS) {
     throw new Error('result.summary exceeds limit');
   }
 
@@ -331,7 +360,7 @@ function validateResult(result, request) {
       `result.findings[${index}]`
     );
     requireString(finding.id, `result.findings[${index}].id`);
-    if (finding.id.length > MAX_FINDING_ID_CHARS) {
+    if (characterLength(finding.id) > MAX_FINDING_ID_CHARS) {
       throw new Error(`result.findings[${index}].id exceeds limit`);
     }
     if (findingIds.has(finding.id)) throw new Error(`duplicate finding id: ${finding.id}`);
@@ -344,11 +373,11 @@ function validateResult(result, request) {
       throw new Error(`result.findings[${index}].category is invalid`);
     }
     requireString(finding.claim, `result.findings[${index}].claim`);
-    if (finding.claim.length > MAX_CLAIM_CHARS) {
+    if (characterLength(finding.claim) > MAX_CLAIM_CHARS) {
       throw new Error(`result.findings[${index}].claim exceeds limit`);
     }
     requireString(finding.verification, `result.findings[${index}].verification`);
-    if (finding.verification.length > MAX_VERIFICATION_CHARS) {
+    if (characterLength(finding.verification) > MAX_VERIFICATION_CHARS) {
       throw new Error(`result.findings[${index}].verification exceeds limit`);
     }
     validateEvidenceRefs(finding, evidenceIds, index);
@@ -478,7 +507,7 @@ function buildReviewerEnv(config, env = process.env, platform = process.platform
 
 function runReviewer(request, config, options = {}) {
   validateRequest(request);
-  const blocked = scanEvidence(request.evidence);
+  const blocked = scanRequest(request);
   if (blocked.length > 0) {
     const reasons = blocked.map(item => `${item.evidenceId}:${item.reason}`).join(', ');
     throw new Error(`external review blocked by deterministic secret scan (${reasons})`);
@@ -521,7 +550,7 @@ function runReviewer(request, config, options = {}) {
 
 function buildPreview(request, config, configPath = getDefaultConfigPath()) {
   const { totalChars } = validateRequest(request);
-  const blocked = scanEvidence(request.evidence);
+  const blocked = scanRequest(request);
   return {
     schema: PREVIEW_SCHEMA,
     mode: request.mode,
@@ -537,7 +566,7 @@ function buildPreview(request, config, configPath = getDefaultConfigPath()) {
       id: item.id,
       kind: item.kind,
       source: item.source,
-      characters: item.content.length,
+      characters: characterLength(item.content),
     })),
     totalCharacters: totalChars,
     secretScan: {
@@ -578,11 +607,13 @@ module.exports = {
   assertNoExtraKeys,
   buildPreview,
   buildReviewerEnv,
+  characterLength,
   createRequest,
   getDefaultConfigPath,
   loadConfig,
   runReviewer,
   scanEvidence,
+  scanRequest,
   scanSecretText,
   sensitiveDiffPathReason,
   sensitivePathReason,
