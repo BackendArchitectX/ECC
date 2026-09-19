@@ -15,6 +15,7 @@ const {
   loadConfig,
   runReviewer,
   sensitivePathReason,
+  validateConfig,
   writeConfig,
 } = require('./lib/cross-review');
 
@@ -251,7 +252,6 @@ function runConfigure(options) {
     ...(options.timeoutMs === null ? {} : { timeoutMs: options.timeoutMs }),
   };
   if (options.dryRun) {
-    const { validateConfig } = require('./lib/cross-review');
     const normalized = validateConfig(config);
     const payload = {
       schema: 'ecc.review.config-preview.v1',
