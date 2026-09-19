@@ -10,6 +10,7 @@ const {
   RESULT_SCHEMA,
   buildPreview,
   buildReviewerEnv,
+  characterLength,
   createRequest,
   loadConfig,
   runReviewer,
@@ -135,6 +136,9 @@ function main() {
       assert.strictEqual(sensitiveDiffPathReason(binaryKey), 'private-key-file');
       assert.strictEqual(sensitiveDiffPathReason(binaryEnv), 'dotenv-file');
     }],
+    ['counts Unicode code points consistently with schema and Python validation', () => {
+      assert.strictEqual(characterLength('A🙂€'), 3);
+    }],
     ['detects high-confidence credential text without returning the secret', () => {
       const secret = 'ghp_' + 'A'.repeat(36);
       const blocked = scanEvidence([{
@@ -234,6 +238,21 @@ function main() {
       assert.strictEqual(child.AWS_SECRET_ACCESS_KEY, undefined);
       assert.strictEqual(child.RANDOM_PRIVATE_VALUE, undefined);
       assert.strictEqual(child.ECC_CROSS_REVIEW_PROTOCOL, 'ecc.review.v1');
+    }],
+    ['blocks secret-bearing objective before reviewer executes', () => {
+      let calls = 0;
+      const request = validRequest({
+        objective: 'Review with token ' + 'ghp_' + 'A'.repeat(36),
+      });
+      assert.throws(
+        () => runReviewer(
+          request,
+          { command: 'never-run', args: [], passEnv: [], timeoutMs: 120000 },
+          { spawnSync: () => { calls += 1; return { status: 0, stdout: '{}' }; } }
+        ),
+        /secret scan/
+      );
+      assert.strictEqual(calls, 0);
     }],
     ['does not start reviewer when deterministic secret scan blocks', () => {
       let calls = 0;
