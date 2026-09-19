@@ -44,7 +44,7 @@ Notes:
     and must return ecc.review.result.v1 JSON on stdout.
   - Reviewer configuration is user-scoped by default. Repository-owned reviewer
     commands are never auto-discovered.
-  - --dry-run performs validation and secret scanning but transmits nothing.
+  - --dry-run performs validation and secret scanning. No data transmitted.
   - --diff gathers tracked staged/unstaged changes with git diff HEAD. Untracked
     files are intentionally excluded unless explicitly supplied with --evidence.
 `;
