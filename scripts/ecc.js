@@ -31,6 +31,10 @@ const COMMANDS = {
     script: 'consult.js',
     description: 'Recommend ECC components and profiles from a natural language query',
   },
+  'cross-review': {
+    script: 'cross-review.js',
+    description: 'Request a bounded independent second-opinion review',
+  },
   'control-pane': {
     script: 'control-pane.js',
     description: 'Run the local ECC2 operator control pane',
@@ -113,6 +117,7 @@ const PRIMARY_COMMANDS = [
   'catalog',
   'consult',
   'control-pane',
+  'cross-review',
   'ito',
   'nasiko',
   'memory',
@@ -167,6 +172,9 @@ Examples:
   ecc catalog components --family language
   ecc catalog show framework:nextjs
   ecc consult "security reviews"
+  ecc cross-review status
+  ecc cross-review diff --dry-run
+  ecc cross-review configure --command llm-review-adapter --pass-env LLM_PROVIDER --pass-env LLM_MODEL --pass-env OPENAI_API_KEY
   ecc control-pane --port 8765
   ecc ito login [--no-browser]
   ecc ito logout
