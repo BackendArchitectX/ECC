@@ -33,10 +33,10 @@ const DEFAULT_MAX_BUFFER_BYTES = 4 * 1024 * 1024;
 const SENSITIVE_PATH_RULES = Object.freeze([
   ['dotenv-file', /(^|\/)\.env(?:$|[./])/i],
   ['credential-file', /(^|\/)(?:credentials?|secrets?)(?:$|[._/-])/i],
-  ['private-key-file', /\.(?:pem|key|p12|pfx)$/i],
-  ['ssh-private-key', /(^|\/)id_(?:rsa|dsa|ecdsa|ed25519)$/i],
-  ['aws-credentials-file', /(^|\/)\.aws\/credentials$/i],
-  ['npm-credentials-file', /(^|\/)\.npmrc$/i],
+  ['private-key-file', /\.(?:pem|key|p12|pfx)(?:$|[\s"])/i],
+  ['ssh-private-key', /(^|\/)id_(?:rsa|dsa|ecdsa|ed25519)(?:$|[\s"])/i],
+  ['aws-credentials-file', /(^|\/)\.aws\/credentials(?:$|[\s"])/i],
+  ['npm-credentials-file', /(^|\/)\.npmrc(?:$|[\s"])/i],
 ]);
 
 const SECRET_PATTERNS = Object.freeze([
@@ -82,12 +82,19 @@ function sensitivePathReason(source) {
 }
 
 function sensitiveDiffPathReason(content) {
+  const headerPrefixes = [
+    'diff --git ',
+    '--- ',
+    '+++ ',
+    'rename from ',
+    'rename to ',
+    'Binary files ',
+  ];
+
   for (const line of String(content || '').split(/\r?\n/)) {
-    const match = line.match(/^(?:---|\+\+\+)\s+(?:[ab]\/(.+)|(.+))$/);
-    if (!match) continue;
-    const candidate = (match[1] || match[2] || '').trim();
-    if (!candidate || candidate === '/dev/null') continue;
-    const reason = sensitivePathReason(candidate);
+    if (!headerPrefixes.some(prefix => line.startsWith(prefix))) continue;
+    if (line.includes('/dev/null')) continue;
+    const reason = sensitivePathReason(line);
     if (reason) return reason;
   }
   return null;
@@ -331,6 +338,11 @@ function getDefaultConfigPath(env = process.env, platform = process.platform) {
 
 function validateConfig(config) {
   if (!isPlainObject(config)) throw new Error('cross-review config must be an object');
+  assertNoExtraKeys(
+    config,
+    new Set(['command', 'args', 'passEnv', 'timeoutMs']),
+    'config'
+  );
   requireString(config.command, 'config.command');
 
   const args = config.args === undefined ? [] : config.args;
@@ -408,8 +420,8 @@ function writeConfig(config, configPath = getDefaultConfigPath()) {
 
 function buildReviewerEnv(config, env = process.env, platform = process.platform) {
   const allowedBase = platform === 'win32'
-    ? ['PATH', 'Path', 'PATHEXT', 'SystemRoot', 'ComSpec', 'TEMP', 'TMP', 'USERPROFILE', 'APPDATA']
-    : ['PATH', 'HOME', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL'];
+    ? ['PATH', 'Path', 'PATHEXT', 'SystemRoot', 'ComSpec', 'TEMP', 'TMP']
+    : ['PATH', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL'];
 
   const childEnv = {};
   for (const name of [...allowedBase, ...config.passEnv]) {
