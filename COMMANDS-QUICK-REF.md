@@ -133,8 +133,9 @@
 
 ## Cross-Review CLI
 
-The slash command delegates bounded transport to the `ecc` CLI. Reviewer
-configuration is user-scoped; external review is never enabled automatically.
+The slash command uses the bundled cross-review runtime when installed as a plugin;
+`ecc cross-review` is the packaged terminal equivalent. Reviewer configuration is
+user-scoped; external review is never enabled automatically.
 
 | Command | What it does |
 |---------|-------------|
