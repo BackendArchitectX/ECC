@@ -62,7 +62,9 @@ one to eight bounded evidence items, a maximum-finding constraint, and an
 immutable advisory trust declaration.
 
 Each evidence item has a stable ID, kind, source label, and text content. The
-runtime caps both individual evidence size and total evidence size.
+runtime caps individual evidence size, total evidence characters, and the final
+UTF-8 request payload at 256 KiB. String bounds are enforced consistently across
+the JSON schemas, Node runtime, and Python reference adapter.
 
 The result schema is schemas/cross-review-result.schema.json with identifier:
 
@@ -98,7 +100,9 @@ ecc cross-review final \
   --json
 ~~~
 
-The slash-command compatibility surface is /cross-review.
+The slash-command compatibility surface is /cross-review. Its Node CLI and
+protocol runtime are owned by commands-core so minimal/selective command
+installs do not depend on hooks-runtime.
 
 ## Configuration
 
@@ -120,7 +124,9 @@ ecc cross-review configure \
   --pass-env OPENAI_API_KEY
 ~~~
 
-The configuration stores only environment-variable **names**, not values.
+The configuration stores environment-variable **names**, not their values.
+High-confidence secret-like values in reviewer arguments are rejected and must
+be supplied through an explicitly allowlisted environment variable instead.
 
 A different executable can implement the same stdin/stdout protocol, including
 an Amazon Bedrock adapter, a local-model adapter, or an internal enterprise
@@ -160,8 +166,9 @@ credential files, npm credential files, private-key blocks, AWS secret access
 keys, bearer authorization headers, common OpenAI/GitHub/Slack token formats,
 and sensitive paths embedded in unified-diff headers.
 
-High-confidence matches fail closed. This version does not ask an LLM to decide
-whether a value is secret.
+High-confidence matches fail closed across the outbound objective, evidence
+IDs, source labels, diff headers, and evidence content. This version does not
+ask an LLM to decide whether a value is secret.
 
 The --dry-run option builds and validates the real packet, performs the same
 secret scan, and reports only metadata such as evidence IDs, source labels, and
@@ -185,7 +192,9 @@ unless the user explicitly supplies one with --evidence.
 The reviewer command is launched with shell disabled, an argument array rather
 than shell interpolation, a temporary-directory working directory rather than
 the project root, a bounded timeout, a bounded output buffer, and a minimal
-environment plus the configured passEnv allowlist.
+environment plus the configured passEnv allowlist. Home-profile variables such
+as HOME, USERPROFILE, and APPDATA are not inherited by default; a user must
+explicitly allow them when a trusted reviewer genuinely requires them.
 
 Reviewer failure, timeout, non-zero exit, malformed JSON, schema mismatch, or
 invalid evidence provenance fails the external review without weakening normal
