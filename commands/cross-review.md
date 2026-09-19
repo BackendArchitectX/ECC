@@ -47,6 +47,17 @@ active plugin:
 node "$CLAUDE_PLUGIN_ROOT/scripts/cross-review.js" <mode> ...
 ~~~
 
+For a manifest-driven selective install, use the managed runtime copied with
+commands-core. For Claude this is normally one of:
+
+~~~bash
+node "$HOME/.claude/scripts/cross-review.js" <mode> ...
+node ".claude/scripts/cross-review.js" <mode> ...
+~~~
+
+For another harness, resolve the equivalent managed harness root and its
+scripts/cross-review.js. Do not assume hooks-runtime is installed.
+
 When working directly from an ECC repository checkout, use:
 
 ~~~bash
