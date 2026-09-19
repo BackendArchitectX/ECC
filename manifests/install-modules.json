@@ -62,6 +62,8 @@
       "description": "Core slash-command library and command docs.",
       "paths": [
         "commands",
+        "scripts/cross-review-runtime.js",
+        "scripts/cross-review.js",
         "scripts/harness-audit.js",
         "scripts/skills-health.js"
       ],
@@ -641,7 +643,7 @@
     {
       "id": "ito-compute",
       "kind": "skills",
-      "description": "Authenticated It\u00f4 GPU inventory, RFQ, status, device revocation, and explicitly gated node-qualification workflows through the separately installed canonical CLI.",
+      "description": "Authenticated Itô GPU inventory, RFQ, status, device revocation, and explicitly gated node-qualification workflows through the separately installed canonical CLI.",
       "paths": [
         "skills/ito-compute",
         "skills/ito-inference",
