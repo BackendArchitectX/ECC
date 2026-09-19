@@ -19,7 +19,7 @@ const {
   validateConfig,
   validateResult,
   writeConfig,
-} = require('../../scripts/lib/cross-review');
+} = require('../../scripts/cross-review-runtime');
 
 function validRequest(overrides = {}) {
   return createRequest({
