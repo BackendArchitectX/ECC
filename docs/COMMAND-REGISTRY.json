@@ -102,7 +102,7 @@
     {
       "command": "cross-review",
       "description": "Request an opt-in bounded independent second-opinion review and verify findings before acting",
-      "type": "review",
+      "type": "testing",
       "primaryAgents": [],
       "allAgents": [],
       "skills": [],
@@ -1042,8 +1042,8 @@
       "orchestration": 11,
       "planning": 2,
       "refactoring": 1,
-      "review": 16,
-      "testing": 53
+      "review": 15,
+      "testing": 54
     },
     "topAgents": [
       {
