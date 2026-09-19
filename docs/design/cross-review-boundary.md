@@ -1,7 +1,6 @@
 # Bounded Second-Opinion Review
 
-Status: experimental implementation for RFC #3174:
-https://github.com/affaan-m/ECC/issues/3174
+Status: experimental implementation for [RFC #3174](https://github.com/affaan-m/ECC/issues/3174).
 
 ## Purpose
 
