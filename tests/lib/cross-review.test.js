@@ -274,6 +274,33 @@ function main() {
       );
       assert.strictEqual(calls, 0);
     }],
+    ['uses and removes a private temporary reviewer working directory', () => {
+      let observedCwd;
+      const result = runReviewer(
+        validRequest(),
+        { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+        {
+          env: { PATH: '/bin' },
+          platform: 'linux',
+          spawnSync: (command, args, options) => {
+            observedCwd = options.cwd;
+            assert.ok(fs.existsSync(observedCwd));
+            if (process.platform !== 'win32') {
+              assert.strictEqual(fs.statSync(observedCwd).mode & 0o777, 0o700);
+            }
+            return {
+              status: 0,
+              signal: null,
+              stdout: JSON.stringify(cleanResult()),
+              stderr: '',
+            };
+          },
+        }
+      );
+      assert.strictEqual(result.status, 'clean');
+      assert.match(path.basename(observedCwd), /^ecc-cross-review-/);
+      assert.strictEqual(fs.existsSync(observedCwd), false);
+    }],
     ['runs configured reviewer without a shell and validates its output', () => {
       let invocation;
       const request = validRequest();
