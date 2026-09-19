@@ -250,6 +250,27 @@ function runConfigure(options) {
     passEnv: options.passEnv,
     ...(options.timeoutMs === null ? {} : { timeoutMs: options.timeoutMs }),
   };
+  if (options.dryRun) {
+    const { validateConfig } = require('./lib/cross-review');
+    const normalized = validateConfig(config);
+    const payload = {
+      schema: 'ecc.review.config-preview.v1',
+      configPath,
+      reviewer: {
+        command: normalized.command,
+        argsCount: normalized.args.length,
+        passEnv: [...normalized.passEnv],
+        timeoutMs: normalized.timeoutMs,
+      },
+      written: false,
+      transmitted: false,
+      message: 'No configuration written. No data transmitted.',
+    };
+    if (options.json) process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
+    else process.stdout.write('No configuration written. No data transmitted.\n');
+    return;
+  }
+
   const saved = writeConfig(config, configPath);
   const payload = statusPayload(saved, configPath);
   if (options.json) process.stdout.write(`${JSON.stringify(payload, null, 2)}\n`);
