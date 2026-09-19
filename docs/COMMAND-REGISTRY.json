@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "totalCommands": 94,
+  "totalCommands": 95,
   "commands": [
     {
       "command": "aside",
@@ -98,6 +98,15 @@
         "tdd-workflow"
       ],
       "path": "commands/cpp-test.md"
+    },
+    {
+      "command": "cross-review",
+      "description": "Request an opt-in bounded independent second-opinion review and verify findings before acting",
+      "type": "review",
+      "primaryAgents": [],
+      "allAgents": [],
+      "skills": [],
+      "path": "commands/cross-review.md"
     },
     {
       "command": "ecc-guide",
@@ -333,6 +342,15 @@
       "path": "commands/harness-audit.md"
     },
     {
+      "command": "hookify",
+      "description": "Create hooks to prevent unwanted behaviors from conversation analysis or explicit instructions",
+      "type": "general",
+      "primaryAgents": [],
+      "allAgents": [],
+      "skills": [],
+      "path": "commands/hookify.md"
+    },
+    {
       "command": "hookify-configure",
       "description": "Enable or disable hookify rules interactively",
       "type": "general",
@@ -358,15 +376,6 @@
       "allAgents": [],
       "skills": [],
       "path": "commands/hookify-list.md"
-    },
-    {
-      "command": "hookify",
-      "description": "Create hooks to prevent unwanted behaviors from conversation analysis or explicit instructions",
-      "type": "general",
-      "primaryAgents": [],
-      "allAgents": [],
-      "skills": [],
-      "path": "commands/hookify.md"
     },
     {
       "command": "instinct-export",
@@ -454,15 +463,6 @@
       "path": "commands/kotlin-test.md"
     },
     {
-      "command": "learn-eval",
-      "description": "Extract reusable patterns from the session, self-evaluate quality before saving, and determine the right save location (Global vs Project).",
-      "type": "testing",
-      "primaryAgents": [],
-      "allAgents": [],
-      "skills": [],
-      "path": "commands/learn-eval.md"
-    },
-    {
       "command": "learn",
       "description": "Extract reusable patterns from the current session and save them as candidate skills or guidance.",
       "type": "review",
@@ -470,6 +470,15 @@
       "allAgents": [],
       "skills": [],
       "path": "commands/learn.md"
+    },
+    {
+      "command": "learn-eval",
+      "description": "Extract reusable patterns from the session, self-evaluate quality before saving, and determine the right save location (Global vs Project).",
+      "type": "testing",
+      "primaryAgents": [],
+      "allAgents": [],
+      "skills": [],
+      "path": "commands/learn-eval.md"
     },
     {
       "command": "loop-start",
@@ -627,6 +636,21 @@
       "path": "commands/orch-review.md"
     },
     {
+      "command": "plan",
+      "description": "Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.",
+      "type": "testing",
+      "primaryAgents": [
+        "planner"
+      ],
+      "allAgents": [
+        "planner"
+      ],
+      "skills": [
+        "plan-canvas"
+      ],
+      "path": "commands/plan.md"
+    },
+    {
       "command": "plan-canvas",
       "description": "Open a plan or HTML artifact in the browser Plan Canvas for annotate-and-approve review",
       "type": "review",
@@ -645,21 +669,6 @@
       "allAgents": [],
       "skills": [],
       "path": "commands/plan-prd.md"
-    },
-    {
-      "command": "plan",
-      "description": "Restate requirements, assess risks, and create step-by-step implementation plan. WAIT for user CONFIRM before touching any code.",
-      "type": "testing",
-      "primaryAgents": [
-        "planner"
-      ],
-      "allAgents": [
-        "planner"
-      ],
-      "skills": [
-        "plan-canvas"
-      ],
-      "path": "commands/plan.md"
     },
     {
       "command": "pm2",
@@ -1033,7 +1042,7 @@
       "orchestration": 11,
       "planning": 2,
       "refactoring": 1,
-      "review": 15,
+      "review": 16,
       "testing": 53
     },
     "topAgents": [
