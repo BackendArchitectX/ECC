@@ -99,7 +99,7 @@ function main() {
       const request = validRequest();
       request.extraAuthority = true;
       assert.throws(
-        () => require('../../scripts/lib/cross-review').validateRequest(request),
+        () => require('../../scripts/cross-review-runtime').validateRequest(request),
         /unsupported field/
       );
     }],
