@@ -17,7 +17,7 @@ const {
   sensitivePathReason,
   validateConfig,
   writeConfig,
-} = require('./lib/cross-review');
+} = require('./cross-review-runtime');
 
 const MAX_EVIDENCE_FILE_BYTES = 256 * 1024;
 const MAX_GIT_DIFF_BYTES = 1024 * 1024;
