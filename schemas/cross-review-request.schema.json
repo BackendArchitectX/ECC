@@ -5,18 +5,31 @@
   "description": "Bounded evidence sent to an advisory independent reviewer. The reviewer receives no repository-write or shell authority through this protocol.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "mode", "objective", "evidence", "constraints", "trust"],
+  "required": [
+    "schema",
+    "mode",
+    "objective",
+    "evidence",
+    "constraints",
+    "trust"
+  ],
   "properties": {
     "schema": {
       "const": "ecc.review.request.v1"
     },
     "mode": {
       "type": "string",
-      "enum": ["plan", "diff", "failure", "final"]
+      "enum": [
+        "plan",
+        "diff",
+        "failure",
+        "final"
+      ]
     },
     "objective": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 2000
     },
     "evidence": {
       "type": "array",
@@ -25,7 +38,12 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "kind", "source", "content"],
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "content"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -33,11 +51,18 @@
           },
           "kind": {
             "type": "string",
-            "enum": ["plan", "diff", "test", "failure", "context"]
+            "enum": [
+              "plan",
+              "diff",
+              "test",
+              "failure",
+              "context"
+            ]
           },
           "source": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 1000
           },
           "content": {
             "type": "string",
@@ -50,7 +75,9 @@
     "constraints": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["maxFindings"],
+      "required": [
+        "maxFindings"
+      ],
       "properties": {
         "maxFindings": {
           "type": "integer",
@@ -62,7 +89,11 @@
     "trust": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["reviewerAuthority", "repositoryWrite", "shellAuthority"],
+      "required": [
+        "reviewerAuthority",
+        "repositoryWrite",
+        "shellAuthority"
+      ],
       "properties": {
         "reviewerAuthority": {
           "const": "advisory"
