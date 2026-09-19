@@ -59,6 +59,27 @@ def test_validate_request_accepts_advisory_boundary():
     assert request["trust"]["shellAuthority"] is False
 
 
+def test_validate_request_rejects_invalid_evidence_id():
+    request = request_payload()
+    request["evidence"][0]["id"] = "../outside"
+
+    with pytest.raises(ValueError, match="stable identifier"):
+        adapter.validate_request(request)
+
+
+def test_validate_request_rejects_utf8_payload_over_transport_limit():
+    request = request_payload()
+    chunk = "€" * 40_000
+    request["evidence"] = [
+        {"id": "a", "kind": "context", "source": "a.txt", "content": chunk},
+        {"id": "b", "kind": "context", "source": "b.txt", "content": chunk},
+        {"id": "c", "kind": "context", "source": "c.txt", "content": chunk},
+    ]
+
+    with pytest.raises(ValueError, match="stdin limit"):
+        adapter.validate_request(request)
+
+
 def test_build_input_marks_evidence_as_untrusted(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "review-model")
 
@@ -106,6 +127,14 @@ def test_validate_result_rejects_unsupplied_evidence_reference():
     }
 
     with pytest.raises(ValueError, match="not supplied"):
+        adapter.validate_result(result, request_payload())
+
+
+def test_validate_result_rejects_oversized_summary():
+    result = clean_result()
+    result["summary"] = "x" * 4001
+
+    with pytest.raises(ValueError, match="summary exceeds"):
         adapter.validate_result(result, request_payload())
 
 
