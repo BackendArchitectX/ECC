@@ -192,7 +192,7 @@ function main() {
         "scripts/lib/nasiko-release.js",
         "scripts/lib/memory-vault-format.js",
         "scripts/lib/memory-vault.js",
-        "scripts/lib/cross-review.js",
+        "scripts/cross-review-runtime.js",
         "scripts/discussion-audit.js",
         "scripts/operator-readiness-dashboard.js",
         "scripts/preview-pack-smoke.js",
