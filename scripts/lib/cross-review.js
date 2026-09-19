@@ -31,8 +31,8 @@ const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_BUFFER_BYTES = 4 * 1024 * 1024;
 
 const SENSITIVE_PATH_RULES = Object.freeze([
-  ['dotenv-file', /(^|\/)\.env(?:$|[.\/])/i],
-  ['credential-file', /(^|\/)(?:credentials?|secrets?)(?:$|[._\/-])/i],
+  ['dotenv-file', /(^|\/)\.env(?:$|[./])/i],
+  ['credential-file', /(^|\/)(?:credentials?|secrets?)(?:$|[._/-])/i],
   ['private-key-file', /\.(?:pem|key|p12|pfx)$/i],
   ['ssh-private-key', /(^|\/)id_(?:rsa|dsa|ecdsa|ed25519)$/i],
   ['aws-credentials-file', /(^|\/)\.aws\/credentials$/i],
