@@ -1,6 +1,7 @@
 ---
 description: Request an opt-in bounded independent second-opinion review and verify findings before acting
 argument-hint: <plan|diff|failure|final> [--evidence kind:id=path] [--dry-run]
+disable-model-invocation: true
 ---
 
 # Cross Review
