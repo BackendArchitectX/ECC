@@ -69,7 +69,7 @@ def test_validate_request_rejects_invalid_evidence_id():
 
 def test_validate_request_rejects_utf8_payload_over_transport_limit():
     request = request_payload()
-    chunk = "€" * 40_000
+    chunk = chr(0x20AC) * 40_000
     request["evidence"] = [
         {"id": "a", "kind": "context", "source": "a.txt", "content": chunk},
         {"id": "b", "kind": "context", "source": "b.txt", "content": chunk},
