@@ -53,6 +53,18 @@ for (const fileName of getCommandFiles()) {
   });
 }
 
+test('cross-review requires explicit user invocation', () => {
+  const content = fs.readFileSync(path.join(commandsDir, 'cross-review.md'), 'utf8');
+  const frontmatter = parseFrontmatter(content);
+
+  assert.ok(frontmatter, 'Expected cross-review frontmatter');
+  assert.match(
+    frontmatter,
+    /^disable-model-invocation:\s*true$/m,
+    'Expected cross-review to prevent model-initiated invocation'
+  );
+});
+
 if (failed > 0) {
   console.log(`\nFailed: ${failed}`);
   process.exit(1);
