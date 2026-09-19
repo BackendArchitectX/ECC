@@ -5,18 +5,27 @@
   "description": "Structured, advisory findings returned by an independent reviewer. Findings remain untrusted until verified against repository and executable evidence.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "status", "summary", "findings"],
+  "required": [
+    "schema",
+    "status",
+    "summary",
+    "findings"
+  ],
   "properties": {
     "schema": {
       "const": "ecc.review.result.v1"
     },
     "status": {
       "type": "string",
-      "enum": ["clean", "findings"]
+      "enum": [
+        "clean",
+        "findings"
+      ]
     },
     "summary": {
       "type": "string",
-      "minLength": 1
+      "minLength": 1,
+      "maxLength": 4000
     },
     "findings": {
       "type": "array",
@@ -35,11 +44,17 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 64
           },
           "severity": {
             "type": "string",
-            "enum": ["critical", "high", "medium", "low"]
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
           },
           "category": {
             "type": "string",
@@ -55,7 +70,8 @@
           },
           "claim": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 8000
           },
           "evidenceRefs": {
             "type": "array",
@@ -63,7 +79,9 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["evidenceId"],
+              "required": [
+                "evidenceId"
+              ],
               "properties": {
                 "evidenceId": {
                   "type": "string",
@@ -71,14 +89,16 @@
                 },
                 "location": {
                   "type": "string",
-                  "minLength": 1
+                  "minLength": 1,
+                  "maxLength": 1000
                 }
               }
             }
           },
           "verification": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 4000
           }
         }
       }
@@ -88,24 +108,32 @@
     {
       "if": {
         "properties": {
-          "status": { "const": "clean" }
+          "status": {
+            "const": "clean"
+          }
         }
       },
       "then": {
         "properties": {
-          "findings": { "maxItems": 0 }
+          "findings": {
+            "maxItems": 0
+          }
         }
       }
     },
     {
       "if": {
         "properties": {
-          "status": { "const": "findings" }
+          "status": {
+            "const": "findings"
+          }
         }
       },
       "then": {
         "properties": {
-          "findings": { "minItems": 1 }
+          "findings": {
+            "minItems": 1
+          }
         }
       }
     }
