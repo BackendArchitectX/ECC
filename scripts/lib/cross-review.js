@@ -74,6 +74,18 @@ function sensitivePathReason(source) {
   return null;
 }
 
+function sensitiveDiffPathReason(content) {
+  for (const line of String(content || '').split(/\r?\n/)) {
+    const match = line.match(/^(?:---|\+\+\+)\s+(?:[ab]\/(.+)|(.+))$/);
+    if (!match) continue;
+    const candidate = (match[1] || match[2] || '').trim();
+    if (!candidate || candidate === '/dev/null') continue;
+    const reason = sensitivePathReason(candidate);
+    if (reason) return reason;
+  }
+  return null;
+}
+
 function scanSecretText(content) {
   for (const [reason, pattern] of SECRET_PATTERNS) {
     pattern.lastIndex = 0;
@@ -88,6 +100,12 @@ function scanEvidence(evidence) {
     const pathReason = sensitivePathReason(item.source);
     if (pathReason) {
       blocked.push({ evidenceId: item.id, source: item.source, reason: pathReason });
+      continue;
+    }
+
+    const diffPathReason = item.kind === 'diff' ? sensitiveDiffPathReason(item.content) : null;
+    if (diffPathReason) {
+      blocked.push({ evidenceId: item.id, source: item.source, reason: diffPathReason });
       continue;
     }
 
@@ -468,6 +486,7 @@ module.exports = {
   runReviewer,
   scanEvidence,
   scanSecretText,
+  sensitiveDiffPathReason,
   sensitivePathReason,
   validateConfig,
   validateRequest,
