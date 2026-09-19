@@ -127,7 +127,13 @@ function main() {
 
       assert.strictEqual(sensitiveDiffPathReason(dotenvDiff), 'dotenv-file');
       assert.strictEqual(sensitiveDiffPathReason(renamedSecret), 'dotenv-file');
+      const binaryEnv = [
+        'diff --git a/.env b/.env',
+        'Binary files a/.env and b/.env differ',
+      ].join('\n');
+
       assert.strictEqual(sensitiveDiffPathReason(binaryKey), 'private-key-file');
+      assert.strictEqual(sensitiveDiffPathReason(binaryEnv), 'dotenv-file');
     }],
     ['detects high-confidence credential text without returning the secret', () => {
       const secret = 'ghp_' + 'A'.repeat(36);
@@ -140,6 +146,17 @@ function main() {
       assert.strictEqual(blocked.length, 1);
       assert.strictEqual(blocked[0].reason, 'github-token');
       assert.ok(!JSON.stringify(blocked).includes(secret));
+    }],
+    ['rejects UTF-8 request payloads that exceed the transport byte limit', () => {
+      const euroChunk = '€'.repeat(40_000);
+      assert.throws(() => createRequest({
+        mode: 'final',
+        evidence: [
+          { id: 'a', kind: 'context', source: 'a.txt', content: euroChunk },
+          { id: 'b', kind: 'context', source: 'b.txt', content: euroChunk },
+          { id: 'c', kind: 'context', source: 'c.txt', content: euroChunk },
+        ],
+      }), /transport limit/);
     }],
     ['dry-run preview never marks data as transmitted', () => {
       const preview = buildPreview(
@@ -161,10 +178,27 @@ function main() {
         /not supplied/
       );
     }],
+    ['rejects oversized reviewer summary', () => {
+      const result = cleanResult();
+      result.summary = 'x'.repeat(4001);
+      assert.throws(() => validateResult(result, validRequest()), /summary exceeds/);
+    }],
     ['rejects unsupported reviewer result fields', () => {
       const result = cleanResult();
       result.command = 'rm -rf';
       assert.throws(() => validateResult(result, validRequest()), /unsupported field/);
+    }],
+    ['rejects high-confidence secrets persisted in reviewer args', () => {
+      const token = 'sk-' + 'A'.repeat(32);
+      assert.throws(
+        () => validateConfig({
+          command: 'reviewer',
+          args: ['--api-key', token],
+          passEnv: [],
+          timeoutMs: 120000,
+        }),
+        /pass credentials through --pass-env/
+      );
     }],
     ['rejects unsupported reviewer config fields', () => {
       assert.throws(
