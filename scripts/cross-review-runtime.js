@@ -505,6 +505,16 @@ function buildReviewerEnv(config, env = process.env, platform = process.platform
   return childEnv;
 }
 
+function createReviewerWorkingDirectory() {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-cross-review-'));
+  try {
+    fs.chmodSync(directory, 0o700);
+  } catch {
+    // Best effort on filesystems that do not implement POSIX modes.
+  }
+  return directory;
+}
+
 function runReviewer(request, config, options = {}) {
   validateRequest(request);
   const blocked = scanRequest(request);
@@ -515,37 +525,54 @@ function runReviewer(request, config, options = {}) {
 
   const normalizedConfig = validateConfig(config);
   const runner = options.spawnSync || spawnSync;
-  const result = runner(
-    normalizedConfig.command,
-    normalizedConfig.args,
-    {
-      input: `${JSON.stringify(request)}\n`,
-      encoding: 'utf8',
-      shell: false,
-      windowsHide: true,
-      timeout: normalizedConfig.timeoutMs,
-      maxBuffer: options.maxBufferBytes || DEFAULT_MAX_BUFFER_BYTES,
-      cwd: options.cwd || os.tmpdir(),
-      env: buildReviewerEnv(normalizedConfig, options.env || process.env, options.platform || process.platform),
-    }
-  );
+  const ownsWorkingDirectory = !options.cwd;
+  const reviewerCwd = options.cwd || createReviewerWorkingDirectory();
 
-  if (result.error) {
-    const timedOut = result.error.code === 'ETIMEDOUT';
-    throw new Error(timedOut ? 'external reviewer timed out' : 'external reviewer failed to start');
-  }
-  if (result.signal) throw new Error(`external reviewer terminated by signal ${result.signal}`);
-  if (result.status !== 0) {
-    throw new Error(`external reviewer exited with status ${result.status}`);
-  }
-
-  let parsed;
   try {
-    parsed = JSON.parse(String(result.stdout || '').trim());
-  } catch {
-    throw new Error('external reviewer returned malformed JSON');
+    const result = runner(
+      normalizedConfig.command,
+      normalizedConfig.args,
+      {
+        input: `${JSON.stringify(request)}\n`,
+        encoding: 'utf8',
+        shell: false,
+        windowsHide: true,
+        timeout: normalizedConfig.timeoutMs,
+        maxBuffer: options.maxBufferBytes || DEFAULT_MAX_BUFFER_BYTES,
+        cwd: reviewerCwd,
+        env: buildReviewerEnv(
+          normalizedConfig,
+          options.env || process.env,
+          options.platform || process.platform
+        ),
+      }
+    );
+
+    if (result.error) {
+      const timedOut = result.error.code === 'ETIMEDOUT';
+      throw new Error(timedOut ? 'external reviewer timed out' : 'external reviewer failed to start');
+    }
+    if (result.signal) throw new Error(`external reviewer terminated by signal ${result.signal}`);
+    if (result.status !== 0) {
+      throw new Error(`external reviewer exited with status ${result.status}`);
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(String(result.stdout || '').trim());
+    } catch {
+      throw new Error('external reviewer returned malformed JSON');
+    }
+    return validateResult(parsed, request);
+  } finally {
+    if (ownsWorkingDirectory) {
+      try {
+        fs.rmSync(reviewerCwd, { recursive: true, force: true });
+      } catch {
+        // Cleanup failure must not expose request data or mask reviewer results.
+      }
+    }
   }
-  return validateResult(parsed, request);
 }
 
 function buildPreview(request, config, configPath = getDefaultConfigPath()) {
@@ -609,6 +636,7 @@ module.exports = {
   buildReviewerEnv,
   characterLength,
   createRequest,
+  createReviewerWorkingDirectory,
   getDefaultConfigPath,
   loadConfig,
   runReviewer,
