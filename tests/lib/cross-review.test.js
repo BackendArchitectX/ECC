@@ -137,7 +137,9 @@ function main() {
       assert.strictEqual(sensitiveDiffPathReason(binaryEnv), 'dotenv-file');
     }],
     ['counts Unicode code points consistently with schema and Python validation', () => {
-      assert.strictEqual(characterLength('A🙂€'), 3);
+      const smile = String.fromCodePoint(0x1F642);
+      const euro = String.fromCodePoint(0x20AC);
+      assert.strictEqual(characterLength('A' + smile + euro), 3);
     }],
     ['detects high-confidence credential text without returning the secret', () => {
       const secret = 'ghp_' + 'A'.repeat(36);
@@ -152,7 +154,7 @@ function main() {
       assert.ok(!JSON.stringify(blocked).includes(secret));
     }],
     ['rejects UTF-8 request payloads that exceed the transport byte limit', () => {
-      const euroChunk = '€'.repeat(40_000);
+      const euroChunk = String.fromCodePoint(0x20AC).repeat(40_000);
       assert.throws(() => createRequest({
         mode: 'final',
         evidence: [
