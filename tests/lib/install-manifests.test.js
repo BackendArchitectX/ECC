@@ -312,6 +312,12 @@ function runTests() {
     );
     assert.ok(!plan.selectedModuleIds.includes('hooks-runtime'),
       'minimal profile should not install hooks-runtime');
+    assert.ok(plan.operations.some(operation => (
+      operation.sourceRelativePath === 'scripts/cross-review.js'
+    )), 'minimal commands-core install should include the cross-review CLI');
+    assert.ok(plan.operations.some(operation => (
+      operation.sourceRelativePath === 'scripts/cross-review-runtime.js'
+    )), 'minimal commands-core install should include the cross-review runtime');
     assert.ok(plan.operations.length > 0, 'Should include install operations');
   })) passed++; else failed++;
 

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "totalCommands": 94,
+  "totalCommands": 95,
   "commands": [
     {
       "command": "aside",
@@ -98,6 +98,15 @@
         "tdd-workflow"
       ],
       "path": "commands/cpp-test.md"
+    },
+    {
+      "command": "cross-review",
+      "description": "Request an opt-in bounded independent second-opinion review and verify findings before acting",
+      "type": "testing",
+      "primaryAgents": [],
+      "allAgents": [],
+      "skills": [],
+      "path": "commands/cross-review.md"
     },
     {
       "command": "ecc-guide",
@@ -1034,7 +1043,7 @@
       "planning": 2,
       "refactoring": 1,
       "review": 15,
-      "testing": 53
+      "testing": 54
     },
     "topAgents": [
       {

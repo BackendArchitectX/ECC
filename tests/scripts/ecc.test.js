@@ -70,6 +70,7 @@ function main() {
       assert.match(result.stdout, /doctor/);
       assert.match(result.stdout, /auto-update/);
       assert.match(result.stdout, /consult/);
+      assert.match(result.stdout, /cross-review/);
       assert.match(result.stdout, /control-pane/);
       assert.match(result.stdout, /loop-status/);
       assert.match(result.stdout, /work-items/);
@@ -135,6 +136,25 @@ function main() {
       const payload = parseJson(result.stdout);
       assert.strictEqual(payload.schemaVersion, 'ecc.consult.v1');
       assert.strictEqual(payload.matches[0].componentId, 'capability:security');
+    }],
+    ['supports help for the cross-review subcommand', () => {
+      const result = runCli(['help', 'cross-review']);
+      assert.strictEqual(result.status, 0, result.stderr);
+      assert.match(result.stdout, /bounded second-opinion review/i);
+      assert.match(result.stdout, /No data transmitted/i);
+    }],
+    ['delegates cross-review status without requiring configuration', () => {
+      const root = createTempDir('ecc-cli-cross-review-');
+      try {
+        const configPath = path.join(root, 'missing.json');
+        const result = runCli(['cross-review', 'status', '--config', configPath, '--json']);
+        assert.strictEqual(result.status, 0, result.stderr);
+        const payload = parseJson(result.stdout);
+        assert.strictEqual(payload.schema, 'ecc.review.status.v1');
+        assert.strictEqual(payload.configured, false);
+      } finally {
+        fs.rmSync(root, { force: true, recursive: true });
+      }
     }],
     ['supports help for the control-pane subcommand', () => {
       const result = runCli(['help', 'control-pane']);

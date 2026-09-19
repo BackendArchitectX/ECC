@@ -1,6 +1,6 @@
 # Commands Quick Reference
 
-> 94 slash commands installed globally. Type `/` in any Claude Code session to invoke.
+> 95 slash commands installed globally. Type `/` in any Claude Code session to invoke.
 
 ---
 
@@ -39,6 +39,7 @@
 | Command | What it does |
 |---------|-------------|
 | `/code-review` | Code review — local uncommitted changes or GitHub PR (pass PR number/URL for PR mode) |
+| `/cross-review` | Opt-in bounded independent second-opinion review; findings remain advisory until verified locally |
 | `/python-review` | Python — PEP 8, type hints, security, idiomatic patterns |
 | `/go-review` | Go — idiomatic patterns, concurrency safety, error handling |
 | `/kotlin-review` | Kotlin — null safety, coroutine safety, clean architecture |
@@ -127,6 +128,21 @@
 | `/sessions` | Browse, search, and manage session history with aliases from `~/.claude/session-data/` (with legacy reads from `~/.claude/sessions/`) |
 | `/checkpoint` | Create, verify, or list workflow checkpoints after running verification checks |
 | `/aside` | Answer a quick side question without losing current task context |
+
+---
+
+## Cross-Review CLI
+
+The slash command uses the bundled cross-review runtime when installed as a plugin;
+`ecc cross-review` is the packaged terminal equivalent. Reviewer configuration is
+user-scoped; external review is never enabled automatically.
+
+| Command | What it does |
+|---------|-------------|
+| `ecc cross-review status` | Show whether an external reviewer is configured without exposing credential values |
+| `ecc cross-review configure` | Configure the reviewer executable, arguments, and explicit environment-variable allowlist |
+| `ecc cross-review <mode> --dry-run` | Validate and secret-scan the exact bounded packet without transmitting it |
+| `ecc cross-review <mode>` | Send one bounded request and validate one structured advisory result |
 
 ---
 
