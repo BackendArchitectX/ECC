@@ -140,6 +140,29 @@ function main() {
         fs.rmSync(root, { recursive: true, force: true });
       }
     }],
+    ['global dry-run previews configuration without writing it', () => {
+      const root = tempDir('ecc-cross-review-config-dry-');
+      try {
+        const configPath = path.join(root, 'config.json');
+        const result = runCli([
+          'configure',
+          '--command', 'llm-review-adapter',
+          '--pass-env', 'OPENAI_API_KEY',
+          '--config', configPath,
+          '--json',
+        ], {
+          env: { ECC_DRY_RUN: '1' },
+        });
+        assert.strictEqual(result.status, 0, result.stderr);
+        const payload = JSON.parse(result.stdout);
+        assert.strictEqual(payload.schema, 'ecc.review.config-preview.v1');
+        assert.strictEqual(payload.written, false);
+        assert.strictEqual(payload.transmitted, false);
+        assert.strictEqual(fs.existsSync(configPath), false);
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    }],
     ['dry-run validates a plan without contacting reviewer', () => {
       const root = tempDir('ecc-cross-review-dry-');
       try {
