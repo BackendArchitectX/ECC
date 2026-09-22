@@ -174,6 +174,7 @@ commands:
   - cpp-build
   - cpp-review
   - cpp-test
+  - cross-review
   - ecc-guide
   - epic-claim
   - epic-decompose

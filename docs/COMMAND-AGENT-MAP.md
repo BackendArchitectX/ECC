@@ -8,6 +8,7 @@ This document lists each slash command and the primary agent(s) or skills it inv
 | `/plan-canvas` | — (skill: plan-canvas) | Browser review canvas for plan artifacts: annotate, chat, approve/request changes |
 | `/tdd` | tdd-guide | Test-driven development |
 | `/code-review` | code-reviewer | Quality and security review |
+| `/cross-review` | — | Explicit bounded external second opinion; Claude verifies findings before acting |
 | `/build-fix` | build-error-resolver | Fix build/type errors |
 | `/e2e` | e2e-runner | Playwright E2E tests |
 | `/refactor-clean` | refactor-cleaner | Dead code removal |
@@ -51,6 +52,7 @@ This document lists each slash command and the primary agent(s) or skills it inv
 
 | CLI surface | Primary skill/runtime | Notes |
 |-------------|-----------------------|-------|
+| `ecc cross-review ...` | `scripts/cross-review.js` + configured reviewer | Bounded advisory review over selected evidence; no automatic invocation |
 | `ecc memory init` | unified-memory / `scripts/memory.js` | Initialize project, team, or user Markdown vault scopes |
 | `ecc memory save` | unified-memory / `scripts/memory.js` | Create unreviewed memory; body must come from stdin or a regular file |
 | `ecc memory handoff` | unified-memory / `scripts/memory.js` | Create a targeted, cross-harness handoff |
