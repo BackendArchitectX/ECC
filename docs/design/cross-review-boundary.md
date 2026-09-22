@@ -4,10 +4,11 @@ Status: experimental implementation for [RFC #3174](https://github.com/affaan-m/
 
 ## Purpose
 
-ECC already has first-party review workflows and a provider-neutral Python LLM
-abstraction. This feature adds a different primitive: an explicit boundary for
-asking an independent reviewer to inspect a bounded evidence packet and return
-structured advisory findings.
+ECC already has first-party review workflows. This feature adds a different
+primitive: an explicit boundary for asking an independent reviewer to inspect a
+bounded evidence packet and return structured advisory findings. The review
+protocol is transport- and provider-neutral; provider SDKs are adapter details,
+not part of the protocol contract.
 
 It replaces the manual workflow of copying a plan, diff, failure, or
 verification result into another model and copying its findings back into the
@@ -77,10 +78,18 @@ references to evidence IDs that were actually sent, and a deterministic
 verification suggestion. The runtime rejects findings that cite an evidence ID
 outside the request.
 
+`status: no_findings` means only that a successfully invoked reviewer returned a
+schema-valid response with zero findings against the supplied bounded evidence.
+It is not a declaration that the repository, implementation, or change is
+"clean", correct, secure, or complete.
+
 ## Explicit Invocation
 
 External review is never triggered by file edits, tool failures, Stop hooks, or
-background automation in this version.
+background automation in this version. Each explicit V1 cross-review request
+permits at most one external reviewer invocation. Automatic retry rounds,
+reviewer-triggered recursion, follow-up reviewer conversations, and autonomous
+model-to-model loops are not supported.
 
 ~~~bash
 ecc cross-review diff --dry-run --json
@@ -134,8 +143,10 @@ review service. ECC core does not need a provider SDK for each one.
 
 ## Reference LLMProvider Adapter
 
-src/llm/review/adapter.py is a reference adapter over ECC's existing Python
-provider layer:
+src/llm/review/adapter.py is one reference adapter from the provider-neutral
+review protocol to ECC's existing Python provider layer. The protocol itself
+does not depend on `LLMProvider`; another trusted reviewer executable may use a
+different SDK, service, local model, or internal gateway:
 
 ~~~text
 ReviewRequest
@@ -154,9 +165,10 @@ Provider selection continues to use the existing LLM_PROVIDER and LLM_MODEL
 configuration. Provider credentials remain environment variables; they are not
 copied into request evidence.
 
-The Node ecc cross-review runtime intentionally does not import provider SDKs.
-This keeps the npm runtime provider-neutral and permits local or
-organization-specific reviewers behind the same protocol.
+The Node `ecc cross-review` runtime intentionally does not import provider SDKs.
+This keeps the protocol boundary independent of the Python provider layer and
+permits local, hosted, or organization-specific reviewers behind the same
+stdin/stdout contract.
 
 ## Data Boundary and Secret Handling
 
@@ -223,8 +235,9 @@ model interpretations
 
 ## Non-Goals
 
-This version does not provide autonomous Claude-to-model conversation loops,\nautomatic retry or follow-up review rounds,
-automatic Stop/PostToolUse review hooks, reviewer repository-write access,
+This version does not provide autonomous Claude-to-model conversation loops,
+automatic retry or follow-up review rounds, automatic Stop/PostToolUse review
+hooks, reviewer repository-write access,
 reviewer shell/tool execution through the protocol, whole-session transcript
 export, automatic provider installation or credential discovery, a native
 Bedrock SDK dependency, automatic acceptance of reviewer findings, or

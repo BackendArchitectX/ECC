@@ -107,8 +107,11 @@ real external review can run. Do not silently choose or configure a provider.
 ## Phase 3 — Interpret Structured Findings
 
 A valid external result uses ecc.review.result.v1 and returns either no_findings or
-structured findings. Each finding must cite one or more evidence IDs that were
-actually present in the outbound packet.
+structured findings. `no_findings` means only that the reviewer completed
+successfully and reported zero findings against the supplied bounded evidence;
+it is not a claim that the repository or implementation is clean. Each finding
+must cite one or more evidence IDs that were actually present in the outbound
+packet.
 
 Do not act on a finding merely because the external reviewer marked it high or
 critical.
