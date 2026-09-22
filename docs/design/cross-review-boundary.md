@@ -132,7 +132,7 @@ A different executable can implement the same stdin/stdout protocol, including
 an Amazon Bedrock adapter, a local-model adapter, or an internal enterprise
 review service. ECC core does not need a provider SDK for each one.
 
-## Existing LLMProvider Integration
+## Reference LLMProvider Adapter
 
 src/llm/review/adapter.py is a reference adapter over ECC's existing Python
 provider layer:
@@ -223,7 +223,7 @@ model interpretations
 
 ## Non-Goals
 
-This version does not provide autonomous Claude-to-model conversation loops,
+This version does not provide autonomous Claude-to-model conversation loops,\nautomatic retry or follow-up review rounds,
 automatic Stop/PostToolUse review hooks, reviewer repository-write access,
 reviewer shell/tool execution through the protocol, whole-session transcript
 export, automatic provider installation or credential discovery, a native

@@ -106,7 +106,7 @@ real external review can run. Do not silently choose or configure a provider.
 
 ## Phase 3 — Interpret Structured Findings
 
-A valid external result uses ecc.review.result.v1 and returns either clean or
+A valid external result uses ecc.review.result.v1 and returns either no_findings or
 structured findings. Each finding must cite one or more evidence IDs that were
 actually present in the outbound packet.
 
@@ -132,7 +132,7 @@ Never claim a verification or test passed unless it actually ran.
 Return a compact reconciliation:
 
 ~~~text
-Cross-review: clean | findings
+Cross-review: no_findings | findings
 External findings: <count>
 
 R-001  VERIFIED | REJECTED | FIXED | REGRESSION_TESTED

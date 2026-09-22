@@ -18,7 +18,7 @@
     "status": {
       "type": "string",
       "enum": [
-        "clean",
+        "no_findings",
         "findings"
       ]
     },
@@ -109,7 +109,7 @@
       "if": {
         "properties": {
           "status": {
-            "const": "clean"
+            "const": "no_findings"
           }
         }
       },

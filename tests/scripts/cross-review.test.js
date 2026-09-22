@@ -63,7 +63,7 @@ function makeReviewer(root, options = {}) {
     "  const request = JSON.parse(input);",
     "  const result = {",
     "    schema: 'ecc.review.result.v1',",
-    "    status: 'clean',",
+    "    status: 'no_findings',",
     "    summary: 'No material issue found in supplied evidence.',",
     "    findings: []",
     "  };",
@@ -208,7 +208,7 @@ function main() {
         assert.strictEqual(result.status, 0, result.stderr);
         const payload = JSON.parse(result.stdout);
         assert.strictEqual(payload.schema, 'ecc.review.result.v1');
-        assert.strictEqual(payload.status, 'clean');
+        assert.strictEqual(payload.status, 'no_findings');
       } finally {
         fs.rmSync(root, { recursive: true, force: true });
       }

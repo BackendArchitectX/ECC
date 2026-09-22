@@ -35,10 +35,10 @@ function validRequest(overrides = {}) {
   });
 }
 
-function cleanResult() {
+function noFindingsResult() {
   return {
     schema: RESULT_SCHEMA,
-    status: 'clean',
+    status: 'no_findings',
     summary: 'No material issue found in the supplied evidence.',
     findings: [],
   };
@@ -185,12 +185,12 @@ function main() {
       );
     }],
     ['rejects oversized reviewer summary', () => {
-      const result = cleanResult();
+      const result = noFindingsResult();
       result.summary = 'x'.repeat(4001);
       assert.throws(() => validateResult(result, validRequest()), /summary exceeds/);
     }],
     ['rejects unsupported reviewer result fields', () => {
-      const result = cleanResult();
+      const result = noFindingsResult();
       result.command = 'rm -rf';
       assert.throws(() => validateResult(result, validRequest()), /unsupported field/);
     }],
@@ -293,13 +293,13 @@ function main() {
             return {
               status: 0,
               signal: null,
-              stdout: JSON.stringify(cleanResult()),
+              stdout: JSON.stringify(noFindingsResult()),
               stderr: '',
             };
           },
         }
       );
-      assert.strictEqual(result.status, 'clean');
+      assert.strictEqual(result.status, 'no_findings');
       assert.match(path.basename(observedCwd), /^ecc-cross-review-/);
       assert.strictEqual(fs.existsSync(observedCwd), false);
     }],
@@ -323,13 +323,13 @@ function main() {
             return {
               status: 0,
               signal: null,
-              stdout: JSON.stringify(cleanResult()),
+              stdout: JSON.stringify(noFindingsResult()),
               stderr: '',
             };
           },
         }
       );
-      assert.strictEqual(result.status, 'clean');
+      assert.strictEqual(result.status, 'no_findings');
       assert.strictEqual(invocation.command, '/usr/bin/reviewer');
       assert.deepStrictEqual(invocation.args, ['--mode', 'json']);
       assert.strictEqual(invocation.options.shell, false);
@@ -352,6 +352,108 @@ function main() {
         ),
         /malformed JSON/
       );
+    }],
+    ['timeout never becomes a no-findings review', () => {
+      assert.throws(
+        () => runReviewer(
+          validRequest(),
+          { command: 'reviewer', args: [], passEnv: [], timeoutMs: 1000 },
+          {
+            spawnSync: () => ({
+              error: Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' }),
+            }),
+          }
+        ),
+        /external reviewer timed out/
+      );
+    }],
+    ['reviewer start failure never becomes a no-findings review', () => {
+      assert.throws(
+        () => runReviewer(
+          validRequest(),
+          { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+          {
+            spawnSync: () => ({
+              error: Object.assign(new Error('spawn failed'), { code: 'ENOENT' }),
+            }),
+          }
+        ),
+        /external reviewer failed to start/
+      );
+    }],
+    ['signal termination never becomes a no-findings review', () => {
+      assert.throws(
+        () => runReviewer(
+          validRequest(),
+          { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+          {
+            spawnSync: () => ({
+              status: null,
+              signal: 'SIGTERM',
+              stdout: '',
+              stderr: '',
+            }),
+          }
+        ),
+        /terminated by signal SIGTERM/
+      );
+    }],
+    ['non-zero reviewer exit never becomes a no-findings review', () => {
+      assert.throws(
+        () => runReviewer(
+          validRequest(),
+          { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+          {
+            spawnSync: () => ({
+              status: 17,
+              signal: null,
+              stdout: '',
+              stderr: 'provider unavailable',
+            }),
+          }
+        ),
+        /exited with status 17/
+      );
+    }],
+    ['schema-invalid output never becomes a no-findings review', () => {
+      assert.throws(
+        () => runReviewer(
+          validRequest(),
+          { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+          {
+            spawnSync: () => ({
+              status: 0,
+              signal: null,
+              stdout: JSON.stringify({
+                ...noFindingsResult(),
+                schema: 'ecc.review.result.invalid',
+              }),
+              stderr: '',
+            }),
+          }
+        ),
+        /result\.schema must be/
+      );
+    }],
+    ['one request performs exactly one external reviewer invocation', () => {
+      let calls = 0;
+      const result = runReviewer(
+        validRequest(),
+        { command: 'reviewer', args: [], passEnv: [], timeoutMs: 120000 },
+        {
+          spawnSync: () => {
+            calls += 1;
+            return {
+              status: 0,
+              signal: null,
+              stdout: JSON.stringify(noFindingsResult()),
+              stderr: '',
+            };
+          },
+        }
+      );
+      assert.strictEqual(calls, 1);
+      assert.strictEqual(result.status, 'no_findings');
     }],
     ['writes and reloads user reviewer config without secret values', () => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ecc-cross-review-config-'));

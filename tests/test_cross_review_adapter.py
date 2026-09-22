@@ -28,10 +28,10 @@ def request_payload():
     }
 
 
-def clean_result():
+def no_findings_result():
     return {
         "schema": "ecc.review.result.v1",
-        "status": "clean",
+        "status": "no_findings",
         "summary": "No material issue found.",
         "findings": [],
     }
@@ -39,7 +39,7 @@ def clean_result():
 
 class FakeProvider:
     def __init__(self, content=None, configured=True):
-        self.content = content or json.dumps(clean_result())
+        self.content = content or json.dumps(no_findings_result())
         self.configured = configured
         self.last_input = None
 
@@ -97,7 +97,7 @@ def test_review_reuses_existing_provider_layer(monkeypatch):
 
     result = adapter.review(request_payload())
 
-    assert result["status"] == "clean"
+    assert result["status"] == "no_findings"
     assert provider.last_input is not None
 
 
@@ -131,7 +131,7 @@ def test_validate_result_rejects_unsupplied_evidence_reference():
 
 
 def test_validate_result_rejects_oversized_summary():
-    result = clean_result()
+    result = no_findings_result()
     result["summary"] = "x" * 4001
 
     with pytest.raises(ValueError, match="summary exceeds"):
@@ -139,7 +139,7 @@ def test_validate_result_rejects_oversized_summary():
 
 
 def test_validate_result_rejects_extra_authority_field():
-    result = clean_result()
+    result = no_findings_result()
     result["shellCommand"] = "rm -rf"
 
     with pytest.raises(ValueError, match="missing or unsupported root fields"):
@@ -147,7 +147,7 @@ def test_validate_result_rejects_extra_authority_field():
 
 
 def test_review_rejects_markdown_fenced_json(monkeypatch):
-    fenced = chr(96) * 3 + "json\n" + json.dumps(clean_result()) + "\n" + chr(96) * 3
+    fenced = chr(96) * 3 + "json\n" + json.dumps(no_findings_result()) + "\n" + chr(96) * 3
     provider = FakeProvider(content=fenced)
     monkeypatch.setattr(adapter, "get_provider", lambda: provider)
 

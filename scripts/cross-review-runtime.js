@@ -332,8 +332,8 @@ function validateResult(result, request) {
   if (result.schema !== RESULT_SCHEMA) {
     throw new Error(`result.schema must be ${RESULT_SCHEMA}`);
   }
-  if (!['clean', 'findings'].includes(result.status)) {
-    throw new Error('result.status must be clean or findings');
+  if (!['no_findings', 'findings'].includes(result.status)) {
+    throw new Error('result.status must be no_findings or findings');
   }
   requireString(result.summary, 'result.summary');
   if (characterLength(result.summary) > MAX_SUMMARY_CHARS) {
@@ -344,8 +344,8 @@ function validateResult(result, request) {
   if (result.findings.length > request.constraints.maxFindings || result.findings.length > MAX_FINDINGS) {
     throw new Error('result.findings exceeds the configured finding limit');
   }
-  if (result.status === 'clean' && result.findings.length !== 0) {
-    throw new Error('result.status=clean requires an empty findings array');
+  if (result.status === 'no_findings' && result.findings.length !== 0) {
+    throw new Error('result.status=no_findings requires an empty findings array');
   }
   if (result.status === 'findings' && result.findings.length === 0) {
     throw new Error('result.status=findings requires at least one finding');

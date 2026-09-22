@@ -55,7 +55,7 @@ only findings supported by evidence actually present in the request.
 Return exactly one JSON object and no markdown. It must have this shape:
 {
   "schema": "ecc.review.result.v1",
-  "status": "clean" | "findings",
+  "status": "no_findings" | "findings",
   "summary": "short summary",
   "findings": [
     {
@@ -72,7 +72,7 @@ Return exactly one JSON object and no markdown. It must have this shape:
   ]
 }
 
-Use status "clean" only with an empty findings array. Use status "findings" only
+Use status "no_findings" only with an empty findings array. Use status "findings" only
 when at least one finding exists. Do not cite files, logs, or facts that were not
 provided in the request. Respect constraints.maxFindings.
 """
@@ -194,8 +194,8 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("review result contains missing or unsupported root fields")
     if result.get("schema") != RESULT_SCHEMA:
         raise ValueError(f"result.schema must be {RESULT_SCHEMA}")
-    if result.get("status") not in {"clean", "findings"}:
-        raise ValueError("result.status must be clean or findings")
+    if result.get("status") not in {"no_findings", "findings"}:
+        raise ValueError("result.status must be no_findings or findings")
     summary = _require_non_empty_string(result.get("summary"), "result.summary")
     if len(summary) > MAX_SUMMARY_CHARS:
         raise ValueError("result.summary exceeds limit")
@@ -206,8 +206,8 @@ def validate_result(result: Any, request: dict[str, Any]) -> dict[str, Any]:
     max_findings = request["constraints"]["maxFindings"]
     if len(findings) > max_findings:
         raise ValueError("result.findings exceeds request.constraints.maxFindings")
-    if result["status"] == "clean" and findings:
-        raise ValueError("clean result must not contain findings")
+    if result["status"] == "no_findings" and findings:
+        raise ValueError("no_findings result must not contain findings")
     if result["status"] == "findings" and not findings:
         raise ValueError("findings result must contain at least one finding")
 
